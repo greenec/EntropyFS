@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using EntropyFS.Models;
+using System.IO;
 using System.Linq;
 using System.Numerics;
 using System.Security.Cryptography;
@@ -7,7 +8,7 @@ namespace EntropyFS
 {
     public class Compressor
     {
-        public static void CompressFile(HashAlgorithm algo, int blockSize, string inputFilePath, string outputFilePath)
+        public static void CompressFile(HashAlgorithm algo, byte blockSize, string inputFilePath, string outputFilePath)
         {
             var inputBytes = File.ReadAllBytes(inputFilePath);
 
@@ -19,36 +20,40 @@ namespace EntropyFS
 
             var outputFile = File.OpenWrite(outputFilePath);
 
+            outputFile.WriteByte(blockSize);
+
             // read through the input file
-            int idx = 0;
-            while (idx < inputBytes.Length)
+            int fileIdx = 0;
+            while (fileIdx < inputBytes.Length)
             {
-                var block = new byte[blockSize];
+                var targetBlock = new Block(blockSize);
 
                 // load the block for hashing
                 for (int i = 0; i < blockSize; i++)
                 {
-                    block[i] = inputBytes[idx++];
+                    targetBlock.Data[i] = inputBytes[fileIdx];
 
-                    if (idx >= inputBytes.Length)
+                    fileIdx++;
+
+                    if (fileIdx >= inputBytes.Length)
                     {
                         break;
                     }
                 }
 
-                var targetHash = algo.ComputeHash(block);
+                var targetHash = targetBlock.ComputeHash(algo);
 
                 // hash it out
                 byte collisionIdx = 0;
-                var workingBlock = new byte[blockSize];
+                var workingBlock = new Block(blockSize);
 
                 var iterations = BigInteger.Pow(256, blockSize);
                 for (BigInteger i = 0; i < iterations; i++)
                 {
-                    var hash = algo.ComputeHash(workingBlock);
+                    var hash = workingBlock.ComputeHash(algo);
                     if (targetHash.SequenceEqual(hash))
                     {
-                        if (block.SequenceEqual(workingBlock))
+                        if (targetBlock.Data.SequenceEqual(workingBlock.Data))
                         {
                             outputFile.Write(hash, 0, hash.Length);
 
@@ -63,27 +68,11 @@ namespace EntropyFS
                         }
                     }
 
-                    IncrementBlock(ref workingBlock);
+                    workingBlock.Increment();
                 }
             }
 
             outputFile.Close();
-        }
-
-        private static void IncrementBlock(ref byte[] block, int idx = 0)
-        {
-            if (idx >= block.Length)
-            {
-                return;
-            }
-
-            block[idx]++;
-
-            // recursively perform the carryover
-            if (block[idx] == 0)
-            {
-                IncrementBlock(ref block, idx + 1);
-            }
         }
     }
 }

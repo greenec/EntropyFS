@@ -11,26 +11,48 @@ namespace EntropyCLI
         {
             Console.WriteLine("Welcome to EntropyCLI!\n");
 
-            /*
-            Console.WriteLine("Running benchmarks to determine which block size is ideal for you...\n");
-            Benchmark(MD5.Create(), "MD5", 1, "+ 1600%");
-            Benchmark(MD5.Create(), "MD5", 2, "+ 800%");
-            Benchmark(MD5.Create(), "MD5", 3, "+ 533%");
-            Benchmark(MD5.Create(), "MD5", 4, "+ 400%");
-            Benchmark(MD5.Create(), "MD5", 5, "+ 320%");
-            Benchmark(MD5.Create(), "MD5", 6, "+ 266%");
-            Benchmark(MD5.Create(), "MD5", 7, "+ 228%");
-            Benchmark(MD5.Create(), "MD5", 8, "+ 200%");
-            */
+            Console.Write("Would you like to run benchmarks for your system? (y/n): ");
+
+            string response = Console.ReadLine().Trim().ToLower();
+            if (response == "y")
+            {
+                Console.WriteLine("Running benchmarks to determine which block size is ideal for you...\n");
+                Benchmark(MD5.Create(), "MD5", 1);
+                Benchmark(MD5.Create(), "MD5", 2);
+                Benchmark(MD5.Create(), "MD5", 3);
+                Benchmark(MD5.Create(), "MD5", 4);
+                Benchmark(MD5.Create(), "MD5", 5);
+                Benchmark(MD5.Create(), "MD5", 6);
+                Benchmark(MD5.Create(), "MD5", 7);
+                Benchmark(MD5.Create(), "MD5", 8);
+            }
+
+            Console.WriteLine();
+            
+            // determine the block size
+            Console.Write("What block size would you like to use? (enter a number in bytes) ");
+            var sBlockSize = Console.ReadLine();
+            byte.TryParse(sBlockSize, out byte blockSize);
+
+            Console.WriteLine();
+
+            // run a benchmark for the chosen system
+            Benchmark(MD5.Create(), "MD5", blockSize);
+
+            Console.WriteLine();
 
             var inputFile = "c:\\users\\connor\\documents\\github\\entropyfs\\entropyfs\\entropycli\\input.txt";
             var outputFile = "c:\\users\\connor\\documents\\github\\entropyfs\\entropyfs\\entropycli\\output.efs";
 
-            EntropyFS.Compressor.CompressFile(MD5.Create(), 3, inputFile, outputFile);
+            EntropyFS.Compressor.CompressFile(MD5.Create(), blockSize, inputFile, outputFile);
+
+            var result = EntropyFS.Decompressor.DecompressFile(MD5.Create(), outputFile);
+
+            Console.WriteLine(result);
         }
 
 
-        private static void Benchmark(HashAlgorithm algo, string sAlgorithm, int blockSize, string sRatio)
+        private static void Benchmark(HashAlgorithm algo, string sAlgorithm, byte blockSize)
         {
             byte[] block = new byte[blockSize];
 
@@ -39,7 +61,6 @@ namespace EntropyCLI
             stopwatch.Start();
 
             int testCycles = 1000000;
-
             for (int i = 0; i < testCycles; i++)
             {
                 algo.ComputeHash(block);
@@ -54,10 +75,14 @@ namespace EntropyCLI
 
             var avgSecondsPerBlock = BigInteger.Divide(avgCyclesPerBlock, hashesPerSecond);
 
+            double sizeChange = algo.HashSize / 8.0 / (blockSize + 1.0) * 100.0;
+
+            var sRatio = (sizeChange > 1 ? "+" : "-") + Math.Round(sizeChange, 2) + "%";
+
             try
             {
                 var timePerBlock = TimeSpan.FromSeconds((double)avgSecondsPerBlock);
-                Console.WriteLine($"{sAlgorithm} - {blockSize} byte blocks. {hashesPerSecond.ToString("N0")} hashes per second. Avg block compute time: {timePerBlock}. Size Change: {sRatio}");
+                Console.WriteLine($"{sAlgorithm} - {blockSize} byte blocks. {hashesPerSecond.ToString("N0")} hashes per second. Avg block compute time: {timePerBlock} Size Change: {sRatio}");
             }
             catch (OverflowException)
             {
