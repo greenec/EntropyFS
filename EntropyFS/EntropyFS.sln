@@ -1,0 +1,31 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 16
+VisualStudioVersion = 16.0.29709.97
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntropyCLI", "EntropyCLI\EntropyCLI.csproj", "{8D43394D-E03C-4208-9F36-CFA74C7C5A6A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EntropyFS", "EntropyFS\EntropyFS.csproj", "{77C5DB25-7A21-4531-9F0E-3FE0B8B4B321}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{8D43394D-E03C-4208-9F36-CFA74C7C5A6A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8D43394D-E03C-4208-9F36-CFA74C7C5A6A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8D43394D-E03C-4208-9F36-CFA74C7C5A6A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8D43394D-E03C-4208-9F36-CFA74C7C5A6A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{77C5DB25-7A21-4531-9F0E-3FE0B8B4B321}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{77C5DB25-7A21-4531-9F0E-3FE0B8B4B321}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{77C5DB25-7A21-4531-9F0E-3FE0B8B4B321}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{77C5DB25-7A21-4531-9F0E-3FE0B8B4B321}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {C55AB8B9-2BD1-4B75-BDBB-FB35EEB4C3FB}
+	EndGlobalSection
+EndGlobal
