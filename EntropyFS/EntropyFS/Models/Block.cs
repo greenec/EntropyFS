@@ -21,7 +21,8 @@ namespace EntropyFS.Models
 
         public byte[] ComputeHash(HashAlgorithm algo)
         {
-            return algo.ComputeHash(Data);
+            Hash = algo.ComputeHash(Data);
+            return Hash;
         }
 
         public void Increment(int idx = 0)
