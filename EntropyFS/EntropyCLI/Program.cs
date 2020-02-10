@@ -44,9 +44,19 @@ namespace EntropyCLI
             var inputFile = "c:\\users\\connor\\documents\\github\\entropyfs\\entropyfs\\entropycli\\input.txt";
             var outputFile = "c:\\users\\connor\\documents\\github\\entropyfs\\entropyfs\\entropycli\\output.efs";
 
-            EntropyFS.Compressor.CompressFile(blockSize, inputFile, outputFile);
+            var stopwatch = new Stopwatch();
 
+            stopwatch.Start();
+            EntropyFS.Compressor.CompressFile(blockSize, inputFile, outputFile);
+            stopwatch.Stop();
+
+            Console.WriteLine($"Compression complete in {stopwatch.Elapsed}");
+
+            stopwatch.Restart();
             var result = EntropyFS.Decompressor.DecompressFile(outputFile);
+            stopwatch.Stop();
+
+            Console.WriteLine($"Decompression complete in {stopwatch.Elapsed}");
 
             Console.WriteLine(result);
         }
