@@ -4,7 +4,6 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace EntropyFS
@@ -15,26 +14,36 @@ namespace EntropyFS
         {
             var blocks = new List<Block>();
 
-            var inputBytes = File.ReadAllBytes(inputFilePath);
+            byte[] buffer = new byte[sizeof(ulong)];
+            byte blockSize = 0;
 
-            // read through the input file
-            int fileIdx = 0;
-
-            byte blockSize = inputBytes.ElementAt(fileIdx++);
-
-            while (fileIdx < inputBytes.Length)
+            using (var fs = new FileStream(inputFilePath, FileMode.Open))
             {
-                ulong hash = BitConverter.ToUInt64(inputBytes.Skip(fileIdx).Take(sizeof(ulong)).ToArray(), 0);
+                while (fs.Position < fs.Length)
+                {
+                    int iBlockSize = fs.ReadByte();
+                    if (iBlockSize == -1)
+                    {
+                        return "Decompression failed, invalid block size.";
+                    }
 
-                fileIdx += sizeof(ulong);
+                    blockSize = (byte)iBlockSize;
+                    
+                    while (fs.Position < fs.Length)
+                    {
+                        // read the hash for this block
+                        fs.Read(buffer, 0, sizeof(ulong));
+                        ulong hash = BitConverter.ToUInt64(buffer, 0);
 
-                ulong collisionIdx = BitConverter.ToUInt64(inputBytes.Skip(fileIdx).Take(sizeof(ulong)).ToArray(), 0);
+                        // read the collision index for this block
+                        fs.Read(buffer, 0, sizeof(ulong));
+                        ulong collisionIdx = BitConverter.ToUInt64(buffer, 0);
 
-                fileIdx += sizeof(ulong);
+                        var block = new Block(blockSize, hash, collisionIdx);
 
-                var block = new Block(blockSize, hash, collisionIdx);
-
-                blocks.Add(block);
+                        blocks.Add(block);
+                    }
+                }
             }
 
             // hash it out
