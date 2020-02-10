@@ -1,14 +1,15 @@
 ﻿using EntropyFS.Models;
+using System;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Security.Cryptography;
+using System.Text;
 
 namespace EntropyFS
 {
     public class Compressor
     {
-        public static void CompressFile(HashAlgorithm algo, byte blockSize, string inputFilePath, string outputFilePath)
+        public static void CompressFile(byte blockSize, string inputFilePath, string outputFilePath)
         {
             var inputBytes = File.ReadAllBytes(inputFilePath);
 
@@ -41,24 +42,26 @@ namespace EntropyFS
                     }
                 }
 
-                var targetHash = targetBlock.ComputeHash(algo);
+                var targetHash = targetBlock.ComputeHash();
 
                 // hash it out
-                byte collisionIdx = 0;
+                ulong collisionIdx = 0;
                 var workingBlock = new Block(blockSize);
 
                 var iterations = BigInteger.Pow(256, blockSize);
                 for (BigInteger i = 0; i < iterations; i++)
                 {
-                    var hash = workingBlock.ComputeHash(algo);
-                    if (targetHash.SequenceEqual(hash))
+                    ulong hash = workingBlock.ComputeHash();
+                    if (targetHash == hash)
                     {
                         if (targetBlock.Data.SequenceEqual(workingBlock.Data))
                         {
-                            outputFile.Write(hash, 0, hash.Length);
+                            var aHash = BitConverter.GetBytes(hash);
+                            outputFile.Write(aHash, 0, aHash.Length);
 
                             // write collision index to file (max 256 for the byte type, hopefully that's not a problem)
-                            outputFile.WriteByte(collisionIdx);
+                            var aCollisionIdx = BitConverter.GetBytes(collisionIdx);
+                            outputFile.Write(aCollisionIdx, 0, aCollisionIdx.Length);
 
                             break;
                         }

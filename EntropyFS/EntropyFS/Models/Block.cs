@@ -1,4 +1,4 @@
-﻿using System.Security.Cryptography;
+﻿using HashDepot;
 
 namespace EntropyFS.Models
 {
@@ -6,22 +6,22 @@ namespace EntropyFS.Models
     {
         public byte[] Data;
 
-        public byte[] Hash { get; set; }
+        public ulong? Hash { get; set; }
 
-        public int CollisionIndex { get; set; }
+        public ulong CollisionIndex { get; set; }
 
-        public int CollisionsDetected { get; set; } = 0;
+        public ulong CollisionsDetected { get; set; } = 0;
 
-        public Block(int blockSize, byte[] hash = null, int collisionIdx = 0)
+        public Block(int blockSize, ulong? hash = null, ulong collisionIdx = 0)
         {
             Data = new byte[blockSize];
             Hash = hash;
             CollisionIndex = collisionIdx;
         }
 
-        public byte[] ComputeHash(HashAlgorithm algo)
+        public ulong ComputeHash()
         {
-            return algo.ComputeHash(Data);
+            return XXHash.Hash64(Data);
         }
 
         public void Increment(int idx = 0)

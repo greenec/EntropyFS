@@ -1,7 +1,7 @@
-﻿using System;
+using HashDepot;
+using System;
 using System.Diagnostics;
 using System.Numerics;
-using System.Security.Cryptography;
 
 namespace EntropyCLI
 {
@@ -17,14 +17,14 @@ namespace EntropyCLI
             if (response == "y")
             {
                 Console.WriteLine("Running benchmarks to determine which block size is ideal for you...\n");
-                Benchmark(MD5.Create(), "MD5", 1);
-                Benchmark(MD5.Create(), "MD5", 2);
-                Benchmark(MD5.Create(), "MD5", 3);
-                Benchmark(MD5.Create(), "MD5", 4);
-                Benchmark(MD5.Create(), "MD5", 5);
-                Benchmark(MD5.Create(), "MD5", 6);
-                Benchmark(MD5.Create(), "MD5", 7);
-                Benchmark(MD5.Create(), "MD5", 8);
+                Benchmark(1);
+                Benchmark(2);
+                Benchmark(3);
+                Benchmark(4);
+                Benchmark(5);
+                Benchmark(6);
+                Benchmark(7);
+                Benchmark(8);
             }
 
             Console.WriteLine();
@@ -37,22 +37,22 @@ namespace EntropyCLI
             Console.WriteLine();
 
             // run a benchmark for the chosen system
-            Benchmark(MD5.Create(), "MD5", blockSize);
+            Benchmark(blockSize);
 
             Console.WriteLine();
 
             var inputFile = "c:\\users\\connor\\documents\\github\\entropyfs\\entropyfs\\entropycli\\input.txt";
             var outputFile = "c:\\users\\connor\\documents\\github\\entropyfs\\entropyfs\\entropycli\\output.efs";
 
-            EntropyFS.Compressor.CompressFile(MD5.Create(), blockSize, inputFile, outputFile);
+            EntropyFS.Compressor.CompressFile(blockSize, inputFile, outputFile);
 
-            var result = EntropyFS.Decompressor.DecompressFile(MD5.Create(), outputFile);
+            var result = EntropyFS.Decompressor.DecompressFile(outputFile);
 
             Console.WriteLine(result);
         }
 
 
-        private static void Benchmark(HashAlgorithm algo, string sAlgorithm, byte blockSize)
+        private static void Benchmark(byte blockSize)
         {
             byte[] block = new byte[blockSize];
 
@@ -63,7 +63,7 @@ namespace EntropyCLI
             int testCycles = 1000000;
             for (int i = 0; i < testCycles; i++)
             {
-                algo.ComputeHash(block);
+                XXHash.Hash64(block);
             }
             stopwatch.Stop();
 
@@ -75,14 +75,16 @@ namespace EntropyCLI
 
             var avgSecondsPerBlock = BigInteger.Divide(avgCyclesPerBlock, hashesPerSecond);
 
-            double sizeChange = algo.HashSize / 8.0 / (blockSize + 1.0) * 100.0;
+            // each block requires an additional 8 bytes to store the collision index
+            double hashSize = sizeof(ulong);
+            double sizeChange = ((hashSize / blockSize) + sizeof(ulong)) * 100.0;
 
             var sRatio = (sizeChange > 1 ? "+" : "-") + Math.Round(sizeChange, 2) + "%";
 
             try
             {
                 var timePerBlock = TimeSpan.FromSeconds((double)avgSecondsPerBlock);
-                Console.WriteLine($"{sAlgorithm} - {blockSize} byte blocks. {hashesPerSecond.ToString("N0")} hashes per second. Avg block compute time: {timePerBlock} Size Change: {sRatio}");
+                Console.WriteLine($"xxHash - {blockSize} byte blocks. {hashesPerSecond.ToString("N0")} hashes per second. Avg block compute time: {timePerBlock} Size Change: {sRatio}");
             }
             catch (OverflowException)
             {

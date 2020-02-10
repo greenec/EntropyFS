@@ -1,4 +1,5 @@
 ﻿using EntropyFS.Models;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace EntropyFS
 {
     public class Decompressor
     {
-        public static string DecompressFile(HashAlgorithm algo, string inputFilePath)
+        public static string DecompressFile(string inputFilePath)
         {
             var blocks = new List<Block>();
 
@@ -23,13 +24,13 @@ namespace EntropyFS
 
             while (fileIdx < inputBytes.Length)
             {
-                var hash = inputBytes.Skip(fileIdx).Take(algo.HashSize / 8).ToArray();
+                ulong hash = BitConverter.ToUInt64(inputBytes.Skip(fileIdx).Take(sizeof(ulong)).ToArray(), 0);
 
-                fileIdx += algo.HashSize / 8;
+                fileIdx += sizeof(ulong);
 
-                var collisionIdx = inputBytes.ElementAt(fileIdx);
+                ulong collisionIdx = BitConverter.ToUInt64(inputBytes.Skip(fileIdx).Take(sizeof(ulong)).ToArray(), 0);
 
-                fileIdx++;
+                fileIdx += sizeof(ulong);
 
                 var block = new Block(blockSize, hash, collisionIdx);
 
@@ -42,9 +43,9 @@ namespace EntropyFS
             var iterations = BigInteger.Pow(256, blockSize);
             for (BigInteger i = 0; i < iterations; i++)
             {
-                var hash = workingBlock.ComputeHash(algo);
+                var hash = workingBlock.ComputeHash();
 
-                var matches = blocks.Where(b => hash.SequenceEqual(b.Hash));
+                var matches = blocks.Where(b => hash == b.Hash);
                 if (matches.Any() == false)
                 {
                     workingBlock.Increment();
