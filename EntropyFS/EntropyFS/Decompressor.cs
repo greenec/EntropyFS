@@ -1,39 +1,54 @@
 ﻿using EntropyFS.Models;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Security.Cryptography;
 using System.Text;
 
 namespace EntropyFS
 {
     public class Decompressor
     {
-        public static string DecompressFile(HashAlgorithm algo, string inputFilePath)
+        public static string DecompressFile(string inputFilePath)
         {
             var blocks = new List<Block>();
 
-            var inputBytes = File.ReadAllBytes(inputFilePath);
+            byte[] buffer = new byte[sizeof(ulong)];
+            byte blockSize = 0;
 
-            // read through the input file
-            int fileIdx = 0;
-
-            byte blockSize = inputBytes.ElementAt(fileIdx++);
-
-            while (fileIdx < inputBytes.Length)
+            using (var fs = new FileStream(inputFilePath, FileMode.Open))
             {
-                var hash = inputBytes.Skip(fileIdx).Take(algo.HashSize / 8).ToArray();
+                while (fs.Position < fs.Length)
+                {
+                    int iBlockSize = fs.ReadByte();
+                    if (iBlockSize == -1)
+                    {
+                        return "Decompression failed, invalid block size.";
+                    }
 
-                fileIdx += algo.HashSize / 8;
+                    blockSize = (byte)iBlockSize;
+                    
+                    while (fs.Position < fs.Length)
+                    {
+                        // read the hash for this block
+                        fs.Read(buffer, 0, sizeof(ulong));
+                        ulong hash = BitConverter.ToUInt64(buffer, 0);
 
-                var collisionIdx = inputBytes.ElementAt(fileIdx);
+                        // read the collision index for this block
+                        fs.Read(buffer, 0, sizeof(ulong));
+                        ulong collisionIdx = BitConverter.ToUInt64(buffer, 0);
 
-                fileIdx++;
+                        var block = new Block(blockSize, hash, collisionIdx);
 
-                var block = new Block(blockSize, hash, collisionIdx);
+                        blocks.Add(block);
+                    }
+                }
+            }
 
-                blocks.Add(block);
+            if (!blocks.Any())
+            {
+                return string.Empty;
             }
 
             // hash it out
@@ -42,9 +57,9 @@ namespace EntropyFS
             var iterations = BigInteger.Pow(256, blockSize);
             for (BigInteger i = 0; i < iterations; i++)
             {
-                var hash = workingBlock.ComputeHash(algo);
+                var hash = workingBlock.ComputeHash();
 
-                var matches = blocks.Where(b => hash.SequenceEqual(b.Hash));
+                var matches = blocks.Where(b => hash == b.Hash);
                 if (matches.Any() == false)
                 {
                     workingBlock.Increment();

@@ -1,17 +1,15 @@
 ﻿using EntropyFS.Models;
+using System;
 using System.IO;
 using System.Linq;
 using System.Numerics;
-using System.Security.Cryptography;
 
 namespace EntropyFS
 {
     public class Compressor
     {
-        public static void CompressFile(HashAlgorithm algo, byte blockSize, string inputFilePath, string outputFilePath)
+        public static void CompressFile(byte blockSize, string inputFilePath, string outputFilePath)
         {
-            var inputBytes = File.ReadAllBytes(inputFilePath);
-
             try
             {
                 File.Delete(outputFilePath);
@@ -23,52 +21,46 @@ namespace EntropyFS
             outputFile.WriteByte(blockSize);
 
             // read through the input file
-            int fileIdx = 0;
-            while (fileIdx < inputBytes.Length)
+            
+            using (FileStream fs = new FileStream(inputFilePath, FileMode.Open))
             {
-                var targetBlock = new Block(blockSize);
-
-                // load the block for hashing
-                for (int i = 0; i < blockSize; i++)
+                while (fs.Position < fs.Length)
                 {
-                    targetBlock.Data[i] = inputBytes[fileIdx];
+                    var targetBlock = new Block(blockSize);
 
-                    fileIdx++;
+                    fs.Read(targetBlock.Data, 0, blockSize);
 
-                    if (fileIdx >= inputBytes.Length)
+                    var targetHash = targetBlock.ComputeHash();
+
+                    // hash it out
+                    ulong collisionIdx = 0;
+                    var workingBlock = new Block(blockSize);
+
+                    var iterations = BigInteger.Pow(256, blockSize);
+                    for (BigInteger i = 0; i < iterations; i++)
                     {
-                        break;
-                    }
-                }
-
-                var targetHash = targetBlock.ComputeHash(algo);
-
-                // hash it out
-                byte collisionIdx = 0;
-                var workingBlock = new Block(blockSize);
-
-                var iterations = BigInteger.Pow(256, blockSize);
-                for (BigInteger i = 0; i < iterations; i++)
-                {
-                    var hash = workingBlock.ComputeHash(algo);
-                    if (targetHash.SequenceEqual(hash))
-                    {
-                        if (targetBlock.Data.SequenceEqual(workingBlock.Data))
+                        ulong hash = workingBlock.ComputeHash();
+                        if (targetHash == hash)
                         {
-                            outputFile.Write(hash, 0, hash.Length);
+                            if (targetBlock.Data.SequenceEqual(workingBlock.Data))
+                            {
+                                var aHash = BitConverter.GetBytes(hash);
+                                outputFile.Write(aHash, 0, aHash.Length);
 
-                            // write collision index to file (max 256 for the byte type, hopefully that's not a problem)
-                            outputFile.WriteByte(collisionIdx);
+                                // write collision index to file (max 256 for the byte type, hopefully that's not a problem)
+                                var aCollisionIdx = BitConverter.GetBytes(collisionIdx);
+                                outputFile.Write(aCollisionIdx, 0, aCollisionIdx.Length);
 
-                            break;
+                                break;
+                            }
+                            else
+                            {
+                                collisionIdx++;
+                            }
                         }
-                        else
-                        {
-                            collisionIdx++;
-                        }
+
+                        workingBlock.Increment();
                     }
-
-                    workingBlock.Increment();
                 }
             }
 
