@@ -46,6 +46,11 @@ namespace EntropyFS
                 }
             }
 
+            if (!blocks.Any())
+            {
+                return string.Empty;
+            }
+
             // hash it out
             var workingBlock = new Block(blockSize);
 
